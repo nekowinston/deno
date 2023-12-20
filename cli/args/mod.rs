@@ -388,6 +388,10 @@ impl LintOptions {
       });
 
     if maybe_reporter_kind.is_none() {
+      // Flag not set, in CI, so use compact reporter.
+      if is_ci() {
+        maybe_reporter_kind = Some(LintReporterKind::Compact);
+      } else
       // Flag not set, so try to get lint reporter from the config file.
       if let Some(lint_config) = &maybe_lint_config {
         maybe_reporter_kind = match lint_config.report.as_deref() {
@@ -1665,6 +1669,14 @@ pub fn npm_pkg_req_ref_to_binary_command(
 ) -> String {
   let binary_name = req_ref.sub_path().unwrap_or(req_ref.req().name.as_str());
   binary_name.to_string()
+}
+
+pub fn is_ci() -> bool {
+  static IS_CI: OnceCell<bool> = OnceCell::new();
+  *IS_CI.get_or_init(|| {
+    let ci = env::var("CI");
+    ci == Ok("true".into()) || ci == Ok("1".into())
+  })
 }
 
 #[cfg(test)]
